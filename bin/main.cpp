@@ -1,862 +1,394 @@
-#include "stdafx.h"
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
-#include <math.h>
-#include <locale>
-#include <conio.h>
+#include <stdlib.h>
 
+char read=' ';
+char token[10] = {};
+char *p ;
+char *t=token;
+int n;
+enum Symbol{BEGINSY=1, ENDSY=2, IFSY=3, THENSY=4, ELSESY=5, INTSYS=6, CHARSY=7, IDSY=20, INTSY=21, PLUSSY=22, MINUSSY=23, STARSY=24, DIVISY=25, LPARSY=26, RPARSY=27, COMMASY=28, SEMISY=29, COLONSY=30, ASSIGNSY=31, EQUSY=32, }symbol;
+void clearToken()
+{	
+    memset(token,'\0',10);
+    t=token;
+    read=' ';
+}
 
-/************************************************************************/
-/*                           ´Ê·¨·ÖÎö                                  */
-/************************************************************************/
-#define max 10
+void getChar()
+{ 
+    read = *p;
+    p++;
+}
 
-char *rwtab[9] = { "main","int","float","double","char","if","else","do","while" };
-
-char prog[100];//Ô´³ÌĞò
-int p;//µ±Ç°´¦Àí×Ö·ûÎ»ÖÃ
-char ch; //µ±Ç°´¦Àí×Ö·û
-int flag; //1±íÊ¾¸Õ¶ÁÈ¡Ò»¸ö±äÁ¿»ò³£Êı£¬"+/-"ÎªÔËËã·û;0·´Ö®£¬"+/-"¿ÉÄÜÎªÊıÖµ·ûºÅ
-
-int syn;       //ÖÖ±ğ±àÂë
-char token[max]; //±£Áô×Ö¡¢ÄÚ²¿×Ö·û´®»ò²Ù×÷·û
-double sum;    //ÊıÖµ
-
-char** variable;//±äÁ¿ĞÅÏ¢±í
-int nVar;
-/************************************************************************/
-void scaner()
+int isSpace()
 {
-	int i;
-	for (i = 0; i<max; i++) token[i] = '\0';
-	sum = 0;
+    if (read == ' ')
+        return 1;
+    else
+        return 0;
+}
 
-	int m = 0;
-	int e = 0;//ÊıÖµÖ¸Êı
+int isNewline()
+{
+    if (read == '\n')
+        return 1;
+    else
+        return 0;
+}
 
-	ch = prog[p++];
-	while (isspace(ch)) ch = prog[p++];//Ô¤´¦Àí£¬È¥³ı×¢ÊÍ¡¢¶àÓà¿Õ¸ñ¡¢»Ø³µ»»ĞĞ·ûµÈ      
+int isTab()
+{
+    if (read == '\t')
+        return 1;
+    else
+        return 0;
+}
 
-	if (isalpha(ch))//±£Áô×Ö¡¢ÄÚ²¿×Ö·û´®
-	{
-		while (isalnum(ch))
-		{
-			token[m++] = ch;
-			ch = prog[p++];
-		}
-		token[m++] = '\0';
-		p--;
-		syn = 10;
-		for (i = 0; i<9; i++)
-			if (strcmp(token, rwtab[i]) == 0)
-			{
-				syn = i + 1;
-				flag = 0;
-				break;
-			}
-		if (syn == 10)
-		{
-			flag = 1;
-			for (i = 1; i <= nVar; i++)
-			{
-				if (!strcmp(token, variable[i])) return;
-			}
-			strcpy(variable[++nVar], token);
-		}
+int isLetter()
+{
+    if ((read>=65&&read<=90) || (read>=97 && read<=122))
+        return 1;
+    else
+        return 0;
+}
 
-	}
+int isDigit()
+{
+    if (read>= 48 && read<=57)
+        return 1;
+    else
+        return 0;
+}
 
-	else if (ch == '+' || ch == '-' || isdigit(ch))//ÊıÖµ¡¢"+"¡¢"-"
-	{
-		if (!isdigit(ch) && (flag == 1 || !isdigit(prog[p])))
-		{
-			token[m++] = ch;
-			if (ch == '+') syn = 22;
-			else syn = 23;
-			flag = 0;
-		}
-		else
-		{
-			int flag1 = 0;
-			int flag2 = 0;
-			if (ch == '+' || ch == '-')
-			{
-				ch = prog[p++];
-				if (ch == '-') flag1 = 1;
-			}
-			while (isdigit(ch))
-			{
-				sum = sum * 10 + ch - '0';
-				ch = prog[p++];
+int isColon()
+{
+    if (read == ':')
+        return 1;
+    else
+        return 0;
+}
 
-			}
-			int k = 10;
-			if (ch == '.' && isdigit(prog[p]))
-			{
-				ch = prog[p++];
-				while (isdigit(ch))
-				{
-					double d = ch - '0';
-					sum = sum + d / k;
-					k = k * 10;
-					ch = prog[p++];
-				}
-			}
-			if (ch == 'e' || ch == 'E')
-			{
-				char ch_tmp = prog[p];
-				if (((ch_tmp == '+' || ch_tmp == '-') && isdigit(prog[p + 1])) || isdigit(ch_tmp))
-				{
-					ch = prog[p++];
-					if (!isdigit(ch))
-					{
-						if (ch == '+')
-							flag2 = 0;
-						else
-							flag2 = 1;
-						ch = prog[p++];
-					}
-					while (isdigit(ch))
-					{
-						e = e * 10 + ch - '0';
-						ch = prog[p++];
-					}
-					if (flag2)
-						sum = sum*pow(10.0, -e);
-					else
-						sum = sum*pow(10.0, e);
-				}
-			}
+int isPlus()
+{
+    if (read == '+')
+        return 1;
+    else
+        return 0;
+}
 
-			if (flag1) sum *= (-1);
-			p--;
-			syn = 20;
-			flag = 1;
-		}
-	}
+int isMinus()
+{
+    if (read == '-')
+        return 1;
+    else
+        return 0;
+}
 
-	else//ÔËËã·û¡¢·Ö¸ô·û
-	{
-		flag = 0;
-		m = 0;
-		switch (ch)
-		{
-		case '<':
+int isStar()
+{
+    if (read == '*')
+        return 1;
+    else
+        return 0;
+}
 
-			token[m++] = ch;
-			ch = prog[p++];
-			if (ch == '=')
-			{
-				syn = 35;
-				token[m++] = ch;
-			}
-			else
-			{
-				syn = 34;
-				p--;
-			}
-			break;
-		case '>':
-			token[m++] = ch;
-			ch = prog[p++];
-			if (ch == '=')
-			{
-				syn = 33;
-				token[m++] = ch;
-			}
+int isLpar()
+{
+    if (read == '(')
+        return 1;
+    else
+        return 0;
+}
 
-			else
-			{
-				syn = 32;
-				p--;
-			}
-			break;
-		case '=':
-			token[m++] = ch;
-			ch = prog[p++];
-			if (ch == '=')
-			{
-				syn = 36;
-				token[m++] = ch;
-			}
-			else
-			{
-				syn = 21;
-				p--;
-			}
-			break;
-		case '!':
-			token[m++] = ch;
-			ch = prog[p++];
-			if (ch == '=')
-			{
-				syn = 37;
-				token[m++] = ch;
-			}
-			else
-			{
-				syn = -1;
-			}
-			break;
-		case '*':    syn = 24; token[0] = ch; break;
-		case '/':    syn = 25; token[0] = ch; break;
-		case '(':    syn = 26; token[0] = ch; break;
-		case ')':    syn = 27; token[0] = ch; break;
-		case '{':    syn = 28; token[0] = ch; break;
-		case '}':    syn = 29; token[0] = ch; break;
-		case ',':    syn = 30; token[0] = ch; break;
-		case ';':    syn = 31; token[0] = ch; break;
-		case '#':    syn = 0;  token[0] = ch; break;
-		default:     syn = -1; printf("illegal character %c/n", ch);
-		}
-	}
-	return;
+int isRpar()
+{
+    if (read == ')')
+        return 1;
+    else
+        return 0;
+}
+
+int isComma()
+{
+    if (read == ',')
+        return 1;
+    else
+        return 0;
+}
+
+int isEqu()
+{
+    if (read == '=')
+        return 1;
+    else
+        return 0;
 }
 
 
-/************************************************************************/
-/*                         Óï·¨ÓïÒå·ÖÎö                                 */
-/************************************************************************/
-//////////////////////////////////////////////////////////////////////////////////////////////
-//                          µİ¹éÏÂ½µ·¨                                 //
-/////////////////////////////////////////////////////////////////////////////////////////////
-void P();  //³ÌĞò
-void B(int *nChain);  //Óï¾ä¿é
-void SS(int *nChain);  //Óï¾ä´®
-void S(int *nChain);  //Óï¾ä
-void AS(int *nChain);  //¸³ÖµÓï¾ä
-void CS(int *nChain);  //Ìõ¼şÓï¾ä
-void LS(int *nChain);  //Ñ­»·Óï¾ä
-void C(int *etc, int *efc);  //Ìõ¼ş
-char * E();  //±í´ïÊ½
-char * T();  //Ïî
-char * F();  //Òò×Ó
-void error(); //³ö´í´¦Àí
-			  //////////////////////////////////////////////////////////////////////////////////////////////
-			  //                          Óï·¨ÖÆµ¼·­Òë                               //
-			  /////////////////////////////////////////////////////////////////////////////////////////////
-typedef struct quaternion {
-	char op[max];
-	char argv1[max];
-	char argv2[max];
-	char res[max];
-}quad;//ËÄÔªÊ½
-quad *pQuad;//ËÄÔªÊ½×éÖ¸Õë
-int index, nSuffix;//ËÄÔªÊ½±àºÅ,ÁÙÊ±±äÁ¿±àºÅ
-				   /************************************************************************/
-void gen(char *op, char *argv1, char *argv2, char *result);
-char *NewTemp();
-int merg(int p1, int p2);
-void bp(int p, int t);
-void printQuad();
-void Parse();
-/************************************************************************/
+int isSemi() 
+{
+    if (read == ';')
+        return 1;
+    else
+        return 0;
+}
+
+int isDivi()
+{
+    if (read == '/')
+        return 1;
+    else
+        return 0;
+}
+
+void catToken ()
+{
+	*t=read;
+	t++;
+}
+
+void retract()
+{
+	p--;
+}
+
+int reserver()
+{
+    if(!strcmp(token,"BEGIN")) return 1;
+    else if(!strcmp(token,"END")) return 2;
+    else if(!strcmp(token,"IF")) return 3;
+    else if(!strcmp(token,"THEN")) return 4;
+    else if(!strcmp(token,"ELSE")) return 5;
+    else if(!strcmp(token,"INT")) return 21;
+    else if(!strcmp(token,"CHAR")) return 7;
+    else 
+		return 0;
+}
+
+int transNum()
+{	
+	int N=0;
+	int i;
+	for(i=0;token[i]!='\0';i++) N=(token[i]-'0')+10*N;
+	return N;
+	  
+}
+
 void error()
 {
-	if (syn == 20) printf("Syntax error before %g", sum);
-	else printf("Syntax error before %g", token);
-	syn = 50;
+	printf("error");
 }
-//<³ÌĞò> ::= main()<Óï¾ä¿é> 
-void P()
-{
-	int nChain;
-	scaner();
-	if (syn == 1)
+
+int getsym()
+{   
+	clearToken();
+	while(isSpace()||isNewline()||isTab())
+		getChar();
+	if (read ==';')
+		return 0;
+	if(isLetter())
 	{
-		scaner();
-		if (syn == 26)
-		{
-			scaner();
-			if (syn == 27)
+		while(isLetter()||isDigit())
 			{
-				scaner();
-				B(&nChain);
-			}
-			else error();
-		}
-		else error();
-	}
-	else error();
-}
-
-//<Óï¾ä¿é> ::= ¡®{¡®<Óï¾ä´®>¡¯}¡¯
-void B(int *nChain)
-{
-	if (syn == 28)
-	{
-		scaner();
-		SS(nChain);
-		if (syn == 29) scaner();
-		else error();
-	}
-	else error();
-}
-
-//<Óï¾ä´®>::=<Óï¾ä>{;<Óï¾ä>};
-void SS(int *nChain)
-{
-	S(nChain);
-	if (syn == 31) scaner();
-	else error();
-	while (syn != 29)
-	{
-		S(nChain);
-		if (syn == 31) scaner();
-		else error();
-	}
-}
-
-//<Óï¾ä>::=<¸³ÖµÓï¾ä>|<Ìõ¼şÓï¾ä>|<Ñ­»·Óï¾ä>
-void S(int *nChain)
-{
-	if (syn == 10) AS(nChain);
-	else if (syn == 6) CS(nChain);
-	else if (syn == 8) LS(nChain);
-	else error();
-}
-
-//<¸³ÖµÓï¾ä>::=ID=<±í´ïÊ½>
-void AS(int *nChain)
-{
-	char stemp[max];
-	char *place;
-	if (syn == 10)
-	{
-		strcpy(stemp, token);
-		scaner();
-		if (syn == 21)
-		{
-			scaner();
-			place = E();
-			gen("=", place, "", stemp);
-			*nChain = 0;
-		}
-		else error();
-	}
-	else error();
-	bp(*nChain, index);
-
-}
-
-//<Ìõ¼şÓï¾ä>::=if<Ìõ¼ş><Óï¾ä¿é>[else <Óï¾ä¿é>]
-void CS(int *nChain)
-{
-	int nChaintmp, ntc, nfc;
-	if (syn == 6)
-	{
-		scaner();
-		C(&ntc, &nfc);
-		bp(ntc, index);
-		B(&nChaintmp);
-		*nChain = merg(nChaintmp, nfc);
-		if (syn == 7)
-		{
-			int nfc1;
-			scaner();
-			nfc1 = index;
-			gen("goto", "", "", "0");
-			bp(*nChain, index);
-			B(&nChaintmp);
-			*nChain = merg(nChaintmp, nfc1);
-			bp(*nChain, index);
-		}
+				catToken();
+				getChar();
+			} 
+		retract();
+		int result=reserver();
+		if(result==0) 
+			symbol=IDSY;
 		else
+			symbol=(enum Symbol)result;
+		
+	}
+	else if(isDigit())
+	{
+		while(isDigit())
 		{
-			*nChain = merg(nChaintmp, nfc);
-			bp(*nChain, index);
+			catToken();
+			getChar();
 		}
+		retract();
+		n=transNum();
+		symbol=INTSY;		
 	}
-	else error();
-}
-
-//<Ñ­»·Óï¾ä>::=do <Óï¾ä¿é>while <Ìõ¼ş>
-void LS(int *nChain)
-{
-	int ntc, nfc;
-	if (syn == 8)
+	else if(isColon())
 	{
-		int nChaintmp;
-		scaner();
-		int indextmp = index;
-		B(&nChaintmp);
-		if (syn == 9)
+		getChar();
+		if(isEqu())
+			symbol=ASSIGNSY;
+			else 
+			{
+				retract();
+				symbol=COLONSY;
+			}
+	}
+	else if(isPlus()) symbol=PLUSSY;
+	else if(isMinus()) symbol=MINUSSY;
+	else if(isStar())	symbol=STARSY;
+	else if(isLpar()) symbol=LPARSY;
+	else if(isRpar()) symbol=RPARSY;
+	else if(isComma()) symbol=COMMASY;
+	else if(isSemi()) symbol=SEMISY;
+	
+	else if(isDivi())
+	{  
+		getChar();
+		if(isStar())
 		{
-			scaner();
-			C(&ntc, &nfc);
-			bp(ntc, indextmp);
-			bp(nfc, index);
-			*nChain = merg(nChaintmp, nfc);
-			bp(*nChain, index);
-		}
-		else error();
-	}
-	else error();
+			do{
+				do{
+					getChar();
+				}while(!isStar());
+				do{
+					getChar();
+					if(isDivi())
+						return 0;
+				}while(isStar());
+			} while(!isStar());
+			
+	
+			
+		}	
+		retract();
+        symbol = DIVISY;
 }
+	else 
+		error();
+	return 0;
+	
+}  
 
-//<Ìõ¼ş>::=<±í´ïÊ½><¹ØÏµÔËËã·û><±í´ïÊ½>
-void C(int *etc, int *efc)
-{
-	char op[max], optmp[max], *place1, *place2;
 
-	place1 = E();
-	if (syn>31 && syn<38)
-	{
-		sprintf(op, "%s", token);
-		scaner();
-		place2 = E();
-		*etc = index;
-		*efc = index + 1;
-		sprintf(optmp, "goto %s", op);
-		gen(optmp, place1, place2, "0");
-		gen("goto", "", "", "0");
-	}
-	else error();
-}
 
-//<±í´ïÊ½> ::= <Ïî>{ +<Ïî>|-<Ïî>}
-char * E()
-{
-	char op[max], *place1, *place2;
-	char *place = (char *)malloc(max);
+struct table  {
+	char id[20];
+	char att[20];
+	char date[20];
+	struct table *next;
+}item[10];
 
-	place = place1 = T();
-	while (syn == 22 || syn == 23)
-	{
-		sprintf(op, "%s", token);
-		scaner();
-		place2 = T();
-		place = NewTemp();
-		gen(op, place1, place2, place);
-		place1 = place;
-	}
-	return place;
-}
+ struct table *hash[10];
+ struct table *sonProce[10];
+ int hashN[10]={0};
+ int prtT=0;
+ int prtS=0;
+ 
 
-//<Ïî> ::= <Òò×Ó>{*<Òò×Ó>|/<Òò×Ó>}
-char * T()
-{
-	char op[max], *place1, *place2;
-	char *place;
+  
+ void gets()
+ {	int start=0;
+    int Put;
 
-	place = place1 = F();
-	while (syn == 24 || syn == 25)
-	{
-		sprintf(op, "%s", token);
-		scaner();
-		place2 = F();
-		place = NewTemp();
-		gen(op, place1, place2, place);
-		place1 = place;
-	}
-	return place;
-}
+	while(*p !='\0')
+ 	{
+	    getsym();
+		 if(symbol==BEGINSY)
+ 			start=1;
+ 		else if (symbol==7)
+ 			Put=1;
+ 		else if (symbol==21)
+ 			Put=-1;
+ 		else if(symbol==IDSY)
+ 			{	
+			     int i=0;
 
-//<Òò×Ó> ::=ID|num|(<±í´ïÊ½>)
-char * F()
-{
-	char *place = (char *)malloc(max);
-	if (syn == 10)
-	{
-		sprintf(place, "%s", token);
-		scaner();
-	}
-	else if (syn == 20)
-	{
-		sprintf(place, "%g", sum);
-		scaner();
-	}
-	else if (syn == 26)
-	{
-		scaner();
-		place = E();
-		if (syn == 27) scaner();
-		else error();
-	}
-	else error();
-	return place;
-}
-
-/************************************************************************/
-//Éú³ÉËÄÔªÊ½
-void gen(char *op, char *argv1, char *argv2, char *result)
-{
-	sprintf(pQuad[index].op, "%s", op);
-	sprintf(pQuad[index].argv1, "%s", argv1);
-	sprintf(pQuad[index].argv2, "%s", argv2);
-	sprintf(pQuad[index].res, "%s", result);
-	index++;
-}
-//²úÉúÁÙÊ±±äÁ¿
-char *NewTemp()
-{
-	char *tmpID = (char *)malloc(max);
-	sprintf(tmpID, "T%d", ++nSuffix);
-	return tmpID;
-}
-//ºÏ²¢p1¡¢p2
-int merg(int p1, int p2)
-{
-	int p, nRes;
-
-	if (p2 == 0) nRes = p1;
-	else
-	{
-		p = p2;
-		nRes = p2;
-		while (atoi(pQuad[p].res))
+ 				while(*(token+i)!=0)
+ 	    		{	   
+				 	item[prtT].id[i]=token[i];
+				 	i++;
+ 	    
+ 	    		}
+ 	    		if(Put==-1) strcpy(item[prtT].att,"int") ;
+ 	    		if(Put==1)  strcpy(item[prtT].att,"char"); 
+ 	    		if(start==1)
+ 	    		{
+ 	    			start=0;
+ 	    			sonProce[prtS]=&item[prtT];
+ 	    			prtS++;
+				 }
+				 
+				 
+				 
+			
+			 	prtT++;
+			 }
+			 
+	  	else if(symbol==31)
+				 {	getsym();
+				 	strcpy(item[prtT].date,token);
+				 }
+	
+	     else if(symbol==ENDSY)
 		{
-			p = atoi(pQuad[p].res);
-			sprintf(pQuad[p].res, "%s", p1);
-		}
-	}
-	return nRes;
-}
-//½«t»ØÌîµ½pÎªÊ×µÄËÄÔªÊ½Á´
-void bp(int p, int t)
+			struct table *add = sonProce[prtS-1];
+			memset(add,0,200);
+			prtS--;
+		} 
+		
+	
+	 } 
+	 
+
+ }
+ 
+void hashID()
 {
-	int w, q = p;
-	while (q)
+	int i=0;
+	while(item[i].id[0]!=0) 
 	{
-		w = atoi(pQuad[q].res);
-		sprintf(pQuad[q].res, "%d", t);
-		q = w;
-	}
-	return;
-}
-//´òÓ¡ËÄÔªÊ½ĞòÁĞµ½ÎÄ¼ş£¬¿ØÖÆÌ¨Êä³ö
-void printQuad()
-{
-	int n;
-	FILE *fw = fopen("quaternion.txt", "w");
-	printf("ËÄÔªÊ½ĞòÁĞÈçÏÂ£º\n");
-	for (n = 1; n<index; n++)
-	{
-		fprintf(fw, "\n%2d:  %7s,%5s,%5s,%5s",
-			n, pQuad[n].op, pQuad[n].argv1, pQuad[n].argv2, pQuad[n].res);
-		printf("\n%2d:  %7s,%5s,%5s,%5s",
-			n, pQuad[n].op, pQuad[n].argv1, pQuad[n].argv2, pQuad[n].res);
-	}
-	fclose(fw);
-}
-
-/************************************************************************/
-//Óï·¨·ÖÎö¡¢ÓïÒå·ÖÎöºÍÖĞ¼ä´úÂëÉú³ÉÖ÷³ÌĞò
-void Parse()
-{
-	int i;
-	p = 0;
-	flag = 0;
-	//³ÌĞò±äÁ¿ĞÅÏ¢±í
-	variable = (char**)malloc(strlen(prog)*sizeof(char*));
-	for (i = 0; i<strlen(prog); i++) variable[i] = (char *)malloc(max);
-	nVar = 0;
-	//ËÄÔªÊ½ĞòÁĞ
-	pQuad = (quad *)malloc(strlen(prog)*sizeof(quad));
-	index = 1;
-	//ËÄÔªÊ½ÁÙÊ±±äÁ¿±àºÅ
-	nSuffix = 0;
-
-	P();
-	if (syn == 0)
-	{
-		printf("Success!\n");
-		printQuad();
-	}
-	else printf("Fail!\n");
-}
-
-
-/************************************************************************/
-/*                    Ä¿±ê´úÂëÉú³É£¨»ã±àÓïÑÔ£©                         */
-/************************************************************************/
-typedef struct assembly_command {
-	char Lable[max];
-	char OP[max];
-	char OPD[max];
-	char OPS[max];
-}assemb;//»ã±àÖ¸Áî
-assemb *pAssemb;//»ã±àÖ¸ÁîĞòÁĞÖ¸Õë
-int indexA;//»ã±àÖ¸Áî±àºÅ
-int* lable;//ËÄÔªÊ½±àºÅËù¶ÔÓ¦»ã±àÖ¸Áî±àºÅ
-char** registerT;//ÁÙÊ±±äÁ¿µØÖ·ÃèÊö±í
-char* registerName[7] = { "AX","BX","CX","DX","BP","SI","DI" };//Í¨ÓÃ¼Ä´æÆ÷±í
-int registerStatus[7];//Í¨ÓÃ¼Ä´æÆ÷ÃèÊö±í£¬0´ú±íÎ´Ê¹ÓÃ£¬1´ú±íÔÚÊ¹ÓÃ
-					  /************************************************************************/
-					  //Éú³É»ã±àÖ¸Áî
-void genA(char *OP, char *OPD, char *OPS, char *Lable)
-{
-	sprintf(pAssemb[indexA].OP, "%s", OP);
-	sprintf(pAssemb[indexA].OPD, "%s", OPD);
-	sprintf(pAssemb[indexA].OPS, "%s", OPS);
-	sprintf(pAssemb[indexA].Lable, "%s", Lable);
-	indexA++;
-}
-
-//·ÖÅä¿ÕÏĞ¼Ä´æÆ÷
-char* GetfreeR()
-{
-	int i;
-	char *reg = (char *)malloc(max);
-	for (i = 0; i<7; i++)
-	{
-		if (registerStatus[i] == 0)
+		int j=0;
+		int asc=0;
+		while(item[i].id[j]!=0)
 		{
-			sprintf(reg, "%s", registerName[i]);
-			registerStatus[i] = 1;
-			return reg;
+			asc+=item[i].id[j];
+			j++;
 		}
+		if(hash[asc%10]==NULL)
+			{
+			hash[asc%10]=&item[i];hashN[asc%10]++;}
+		else  
+		{	hashN[asc%10]++;
+			hash[asc%10]->next= &item[i];
+		} 
+		i++;
 	}
-	reg = "Full";
-	return reg;
+
 }
 
-//²ÎÊıÎªÁÙÊ±±äÁ¿£¬ÎªÎ´·ÖÅä¼Ä´æÆ÷µÄÁÙÊ±±äÁ¿·ÖÅä¼Ä´æÆ÷£¬·µ»ØÆäËùÔÚ¼Ä´æÆ÷
-//²ÎÊıÎªÁ¢¼´Êı»ò³ÌĞò±äÁ¿£¬Ôò·µ»Ø±¾Éí
-char* Place(char *var)
-{
-	if (var[0] == 'T')
-	{
-		char *place = (char *)malloc(max);
-		if (registerT[atoi(var + 1)] == NULL)
-		{
-			place = GetfreeR();
-			registerT[atoi(var + 1)] = place;
-		}
-		else
-		{
-			place = registerT[atoi(var + 1)];
-		}
-		return place;
-	}
-	else
-		return var;
-
-}
-//»ØÌî»ã±àÓï¾äÖĞËùÓĞ×ªÒÆÖ¸ÁîÖĞ±êºÅlabel
-void bpAll()
-{
-	int i;
-	int nLable = 0;
-	int tmp;
-	for (i = 1; i<indexA; i++)
-	{
-		if (pAssemb[i].OP[0] == 'J')
-		{
-			tmp = lable[atoi(pAssemb[i].OPD)];
-			sprintf(pAssemb[tmp].Lable, "L%d:", ++nLable);
-			sprintf(pAssemb[i].OPD, "L%d", nLable);
-		}
-	}
-}
-//»ã±àÓïÑÔÎÄ¼şÉú³É¡¢¿ØÖÆÌ¨Êä³ö
-void printAssemb()
-{
-	int n;
-	FILE *fw = fopen("Assembly.asm", "w");
-	//»ã±àÎ±Ö¸Áî
-	fprintf(fw, ".386");
-	fprintf(fw, "\nDATA\tSEGMENT USE16");
-	for (n = 1; n <= nVar; n++)
-		fprintf(fw, "\n%s\tDW  0", variable[n]);
-	fprintf(fw, "\nDATA\tENDS");
-	fprintf(fw, "\nSTACK\tSEGMENT USE16 STACK");
-	fprintf(fw, "\n\tDB 200 DUP(0)");
-	fprintf(fw, "\nSTACK\tENDS");
-	fprintf(fw, "\nCODE\tSEGMENT USE16");
-	fprintf(fw, "\n\tASSUME  DS:DATA,SS:STACK,CS:CODE");
-	//»ã±àÖ¸Áî
-	fprintf(fw, "\nSTART:\tMOV\tAX,\tDATA");
-	fprintf(fw, "\n\tMOV\tDS,\tAX");
-	printf("\n\n»ã±àÖ¸ÁîĞòÁĞÈçÏÂ£º\n");
-	for (n = 1; n<indexA; n++)
-	{
-		if (!strcmp(pAssemb[n].OPS, ""))
-		{
-			fprintf(fw, "\n%s\t%s\t%s",
-				pAssemb[n].Lable, pAssemb[n].OP, pAssemb[n].OPD);
-			printf("\n%2d:%5s %5s %5s",
-				n, pAssemb[n].Lable, pAssemb[n].OP, pAssemb[n].OPD);
-		}
-		else
-		{
-			fprintf(fw, "\n%s\t%s\t%s,\t%s",
-				pAssemb[n].Lable, pAssemb[n].OP, pAssemb[n].OPD, pAssemb[n].OPS);
-			printf("\n%2d:%5s %5s %5s,%5s",
-				n, pAssemb[n].Lable, pAssemb[n].OP, pAssemb[n].OPD, pAssemb[n].OPS);
-		}
-	}
-	fprintf(fw, "\n\tMOV\tAH,\t4CH");
-	fprintf(fw, "\n\tINT\t21H");
-	//»ã±àÎ±Ö¸Áî
-	fprintf(fw, "\nCODE\tENDS");
-	fprintf(fw, "\n\tEND START");
-	fclose(fw);
-}
-
-/************************************************************************/
-//Ä¿±ê´úÂëÉú³ÉÖ÷³ÌĞò£¬½«Éú³ÉµÄËÄÔªÊ½ÖĞ¼ä´úÂë×ª»»³ÉX86Æ½Ì¨ÉÏµÄÄ¿±ê´úÂë
-void toAssembly()
-{
-	int n, i;
-	pAssemb = (assemb *)malloc(strlen(prog)*sizeof(assemb));
-	for (i = 0; i<7; i++)  registerStatus[i] = 0;
-	registerT = (char **)malloc((nSuffix + 1)*sizeof(char *));
-	for (n = 1; n <= nSuffix; n++)   registerT[n] = NULL;
-	lable = (int *)malloc(index);
-	indexA = 1;
-
-	for (n = 1; n<index; n++)
-	{
-		lable[n] = indexA;
-		switch (pQuad[n].op[0])
-		{
-		case 'g':
-			if (!strcmp(pQuad[n].op, "goto"))
-			{
-				if (atoi(pQuad[n].res) == n + 1)   continue;
-				else genA("JMP", pQuad[n].res, "", "");
-			}
-			else
-			{
-				if (isdigit(pQuad[n].argv1[0] || (pQuad[n].argv1[0] != 'T'&&!isdigit(pQuad[n].argv2[0]) && pQuad[n].argv2[0] != 'T')))//Á¢¼´Êı×öÄ¿±ê²Ù×÷Êı»òÁ½²Ù×÷ÊıÍ¬Îª´æ´¢Æ÷²Ù×÷Êı
-				{
-					char *R = GetfreeR();
-					genA("MOV", R, Place(pQuad[n].argv1), "");
-					genA("CMP", R, Place(pQuad[n].argv2), "");
-				}
-				else
-				{
-					genA("CMP", Place(pQuad[n].argv1), Place(pQuad[n].argv2), "");
-				}
-				if (!strcmp(pQuad[n].op, "goto =="))      genA("JE", pQuad[n].res, "", "");
-				else if (!strcmp(pQuad[n].op, "goto !=")) genA("JNE", pQuad[n].res, "", "");
-				else if (!strcmp(pQuad[n].op, "goto >=")) genA("JGE", pQuad[n].res, "", "");
-				else if (!strcmp(pQuad[n].op, "goto >"))  genA("JG", pQuad[n].res, "", "");
-				else if (!strcmp(pQuad[n].op, "goto <=")) genA("JLE", pQuad[n].res, "", "");
-				else if (!strcmp(pQuad[n].op, "goto <"))  genA("JL", pQuad[n].res, "", "");
-			}
-			break;
-		case '=':
-			if (!isdigit(pQuad[n].argv1[0]) && pQuad[n].argv1[0] != 'T')//Ô´²Ù×÷ÊıÎª´æ´¢Æ÷²Ù×÷Êı
-			{
-				char *R = GetfreeR();
-				genA("MOV", R, pQuad[n].argv1, "");
-				genA("MOV", pQuad[n].res, R, "");
-			}
-			else
-			{
-				genA("MOV", pQuad[n].res, Place(pQuad[n].argv1), "");
-			}
-			for (i = 0; i<7; i++)  registerStatus[i] = 0;
-			break;
-		case '+':
-			if (pQuad[n].argv1[0] != 'T')//Ä¿µÄ²Ù×÷Êı²»Îª¼Ä´æÆ÷²Ù×÷Êı
-			{
-				char *R = GetfreeR();
-				genA("MOV", R, pQuad[n].argv1, "");
-				genA("ADD", R, Place(pQuad[n].argv2), "");
-				if (pQuad[n].res[0] == 'T')  registerT[atoi(pQuad[n].res + 1)] = R;
-			}
-			else
-			{
-				genA("ADD", Place(pQuad[n].argv1), Place(pQuad[n].argv2), "");
-				if (pQuad[n].res[0] == 'T')  registerT[atoi(pQuad[n].res + 1)] = Place(pQuad[n].argv1);
-			}
-			break;
-		case '-':
-			if (pQuad[n].argv1[0] != 'T')//Ä¿µÄ²Ù×÷Êı²»Îª¼Ä´æÆ÷²Ù×÷Êı
-			{
-				char *R = GetfreeR();
-				genA("MOV", R, pQuad[n].argv1, "");
-				genA("SUB", R, Place(pQuad[n].argv2), "");
-				if (pQuad[n].res[0] == 'T') registerT[atoi(pQuad[n].res + 1)] = R;
-			}
-			else
-			{
-				genA("SUB", Place(pQuad[n].argv1), Place(pQuad[n].argv2), "");
-				if (pQuad[n].res[0] == 'T')  registerT[atoi(pQuad[n].res + 1)] = Place(pQuad[n].argv1);
-			}
-			break;
-		case '*':
-			if (pQuad[n].argv1[0] != 'T')//Ä¿µÄ²Ù×÷Êı²»Îª¼Ä´æÆ÷²Ù×÷Êı
-			{
-				char *R = GetfreeR();
-				genA("MOV", R, pQuad[n].argv1, "");
-				genA("IMUL", R, Place(pQuad[n].argv2), "");
-				if (pQuad[n].res[0] == 'T') registerT[atoi(pQuad[n].res + 1)] = R;
-			}
-			else
-			{
-				genA("IMUL", Place(pQuad[n].argv1), Place(pQuad[n].argv2), "");
-				if (pQuad[n].res[0] == 'T')  registerT[atoi(pQuad[n].res + 1)] = Place(pQuad[n].argv1);
-			}
-			break;
-		case '/':
-		{
-			int flag = strcmp(Place(pQuad[n].argv1), "AX");
-			int aStatus;
-			if (flag)
-			{
-				aStatus = registerStatus[0];
-				registerStatus[0] = 1;
-				if (aStatus) genA("PUSH", "AX", "", "");
-			}
-			int dStatus = registerStatus[3];
-			registerStatus[3] = 1;
-			if (dStatus) genA("PUSH", "DX", "", "");
-
-			if (flag)   genA("MOV", "AX", Place(pQuad[n].argv1), "");
-			genA("CWD", "", "", "");
-			if (isdigit(atoi(pQuad[n].argv2)))//³ıÊıÎªÁ¢¼´Êı
-			{
-				char *R = GetfreeR();
-				genA("MOV", R, pQuad[n].argv2, "");
-				genA("IDIV", R, "", "");
-			}
-			else genA("IDIV", pQuad[n].argv2, "", "");
-			if (pQuad[n].res[0] == 'T') registerT[atoi(pQuad[n].res + 1)] = "AX";
-
-			registerStatus[3] = dStatus;
-			if (dStatus) genA("POP", "DX", "", "");
-			if (flag)
-			{
-				registerStatus[0] = aStatus;
-				if (aStatus) genA("POP", "AX", "", "");
-			}
-		}
-		break;
-		default:
-			printf("error!");
-		}
-
-	}
-	bpAll();
-	printAssemb();
-
-}
-/************************************************************************/
-/*                              Ö÷¿Ø³ÌĞò                                */
-/************************************************************************/
 int main()
 {
-	int times = 10;
-	do
+    char input[100] = "BEGIN INT yb :=tlx	BEGIN CHAR Cs := 200 BEGIN INT A,B CHAR K INT D";
+    p = input;
+
+	gets();
+  
+
+  
+	hashID();
+	printf("ç¬¦å·è¡¨:	   ");
+	for(int i=0; i<10; i++)
+	{		
+			
+		if(strcmp(item[i].id, ""))
+		{	printf("%s  %s  ", item[i].id,item[i].att);}
+		if(strcmp(item[i].date, ""))
+			printf("=%s   ", item[i].date);
+		
+	}
+	printf("\n");
+	printf("Hash:   ");
+	for(int i=0; i<10; i++)
 	{
-		printf("Please input program :\n");
-		//ÊäÈëÔ´³ÌĞò
-		p = 0;
-		int i;
-		for (i = 0; i<80; i++) prog[i] = '\0';
-		do
-		{
-			ch = getchar();
-			prog[p++] = ch;
-		} while (ch != '#');
-		//±àÒë               
-		Parse();
-		toAssembly();
-		printf("\n\n");
-	} while (times-- > 0);
+		printf("%d ", hash[i]);
+	}
+		printf("\n");
+
+	printf("å­ç¨‹åºç´¢å¼•:  "); 
+	for(int i=0; i<10; i++)
+	{
+		printf("%d ", sonProce[i]);
+	}
+	printf("\n");   
 }
