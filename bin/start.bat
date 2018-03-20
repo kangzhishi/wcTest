@@ -1,2 +1,2 @@
-wc.exe -l -a main.cpp
+wc.exe -l -a alterban.cpp
 pause
