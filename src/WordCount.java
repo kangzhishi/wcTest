@@ -1,95 +1,53 @@
-package WordTest;
-
-import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.FileReader;
-import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.FileReader;
+import java.io.BufferedOutputStream;
+import java.io.FilenameFilter;
+
 
 import java.util.regex.Pattern;
 
 
-public class WordCount {
+public class wcTest {
 	
-	public static void main(String[] args1) throws FileNotFoundException{
-		String[] args={"-a","-s",".*java"};
-		String[] param=args;
-		int length=param.length;
-		FileInfo fileInfo=null;
-		PrintWriter pw=new PrintWriter(new BufferedOutputStream(new FileOutputStream("result.txt",true)));
-		if(length==2){
-			Command command=analysisCommand(args[0]);
-			fileInfo=new FileInfo(Paths.get(args[1]));
-			execute(command, fileInfo, pw);
-			pw.flush();
-		}
-		else if(length>2){
-			Command[] commands=new Command[length];
-			for(int i=0;i<length;i++)
-				commands[i]=analysisCommand(args[i]);
-			int index;
-			if((index=indexOf(Command.OUTPUT, commands))!=-1){
-				pw=new PrintWriter(new BufferedOutputStream(new FileOutputStream(args[index+1],true)));	
-				commands[index]=null;
-			}
-			String name=param[selectFirstNull(commands)];
-			if((index=indexOf(Command.SALL, commands))==-1){
-				fileInfo=new FileInfo(Paths.get(name));
-				for(Command command:commands)
-					if(command!=null)
-						execute(command, fileInfo, pw);
-			}else{
-				commands[index]=null;
-				String[] list=new File("").getAbsoluteFile().list(new DirFilter(name));
-				for(String item:list){
-					FileInfo fileInfo2=new FileInfo(Paths.get(item));
-					for(Command command:commands)
-						if(command!=null)
-							execute(command, fileInfo2, pw);
-				}
-			}
-			pw.flush();
-				
-		}
-		pw.close();
-	}
-	private static int selectFirstNull(Command[] commands){
-		for(int i=1;i<commands.length;i++)
-			if(commands[i]==null&&commands[i-1]!=null)
-				return i;
-		return -1;
-	}
-	private static int indexOf(Command command,Command[] commands){
+	
+	private static int index(Command command,Command[] commands){
 		for(int i=0;i<commands.length;i++)
 			if(command.equals(commands[i]))
 				return i;
 		return -1;
 	}
-	private static void execute(Command command,FileInfo fileInfo,PrintWriter pw){
+	private static int select(Command[] commands){
+		for(int i=1;i<commands.length;i++)
+			if(commands[i]==null&&commands[i-1]!=null)
+				return i;
+		return -1;
+	}
+
+	private static void execute(Command command,FileInfo fileInfo,PrintWriter ars){
 		switch (command) {
-		case CHAR:pw.write(fileInfo.path()+", 字符数: "+fileInfo.charNum()+"\r\n");break;
-		case WORD:pw.write(fileInfo.path()+", 单词数: "+fileInfo.wordNum()+"\r\n");break;
-		case LINE:pw.write(fileInfo.path()+", 行   数: "+fileInfo.lineNum()+"\r\n");break;
-		case ALL:fileInfo.toFile(pw);break;
+		case c:ars.write(fileInfo.path()+", 字符数: "+fileInfo.cNum()+"\r\n");break;
+		case w:ars.write(fileInfo.path()+", 单词数: "+fileInfo.wNum()+"\r\n");break;
+		case line:ars.write(fileInfo.path()+", 行   数: "+fileInfo.lineNum()+"\r\n");break;
+		case ALL:fileInfo.toFile(ars);break;
 		}
 	}
 	
-	private static Command analysisCommand(String command0){
-		String command =command0.replaceAll("\\s", "");
+	private static Command analysisCommand(String command){
 		if(command.equals("-c"))
-			return Command.CHAR;
+			return Command.c;
 		else if(command.equals("-w"))
-			return Command.WORD;
+			return Command.w;
 		else if(command.equals("-l"))
-			return Command.LINE;
+			return Command.line;
 		else if(command.equals("-o"))
-			return Command.OUTPUT;
+			return Command.output;
 		else if(command.equals("-s"))
 			return Command.SALL;
 		else if(command.equals("-a"))
@@ -98,12 +56,54 @@ public class WordCount {
 			return Command.EXCEPT;
 		else return null;
 	}
+	public static void main(String[] args) throws FileNotFoundException{
+		String[] par=args;
+		int length=par.length;
+		FileInfo fileInfo=null;
+		PrintWriter ars=new PrintWriter(new BufferedOutputStream(new FileOutputStream("result.txt",true)));
+		
+		if(length==2){
+			Command command=analysisCommand(args[0]);
+			fileInfo=new FileInfo(Paths.get(args[1]));
+			execute(command, fileInfo, ars);
+			ars.flush();
+		}
+		else if(length>2){
+			Command[] commands=new Command[length];
+			for(int i=0;i<length;i++)
+				commands[i]=analysisCommand(args[i]);
+			int index;
+			if((index=index(Command.output, commands))!=-1){
+				ars=new PrintWriter(new BufferedOutputStream(new FileOutputStream(args[index+1],true)));	
+				commands[index]=null;
+			}
+			String name=par[select(commands)];
+			if((index=index(Command.SALL, commands))==-1){
+				fileInfo=new FileInfo(Paths.get(name));
+				for(Command command:commands)
+					if(command!=null)
+						execute(command, fileInfo, ars);
+			}else{
+				commands[index]=null;
+				String[] list=new File("").getAbsoluteFile().list(new DirFilter(name));
+				for(String item:list){
+					FileInfo fileInfo2=new FileInfo(Paths.get(item));
+					for(Command command:commands)
+						if(command!=null)
+							execute(command, fileInfo2, ars);
+				}
+			}
+			ars.flush();
+				
+		}
+		ars.close();
+	}
 }
 
 
 class FileInfo{
-	private int charNum;
-	private int wordNum;
+	private int cNum;
+	private int wNum;
 	private int lineSum;
 	private int spaceSum;
 	private int codeSum;
@@ -112,8 +112,8 @@ class FileInfo{
 	private boolean isAnalysis=false;
 	public FileInfo(Path path){
 		this.path=path;
-		charNum=0;
-		wordNum=0;
+		cNum=0;
+		wNum=0;
 		lineSum=0;
 		spaceSum=0;
 		codeSum=0;
@@ -125,11 +125,11 @@ class FileInfo{
 		return path.toString();
 	}
 	
-	public int charNum(){
-		return charNum;
+	public int cNum(){
+		return cNum;
 	}
-	public int wordNum(){
-		return wordNum;
+	public int wNum(){
+		return wNum;
 	}
 	public int lineNum(){
 		return lineSum;
@@ -144,13 +144,13 @@ class FileInfo{
 			try {
 				in =new BufferedReader(new FileReader(path.toString()));
 				while((s=in.readLine())!=null){
-					switch(analysisLine(s)){
+					switch(analysisline(s)){
 					case SPACE:spaceSum++;break;
 					case CODE:codeSum++;break;
 					case NOTE:noteSum++;break;
 					}
-					charNum+=s.replaceAll("\\s", "").length();
-					wordNum+=s.split("\\W+").length;
+					cNum+=s.replaceAll("\\s", "").length();
+					wNum+=s.split("\\W+").length;
 					//sb.append(s);
 					lineSum++;
 				}
@@ -167,20 +167,24 @@ class FileInfo{
 			}
 		}
 	}
-	public void toFile(PrintWriter pw){
-		pw.write(path.toString()+", 字符数: "+charNum+"\r\n"
-				+path.toString()+", 单词数: "+wordNum+"\r\n"
+	public void toFile(PrintWriter ars){
+		ars.write(path.toString()+", 字符数: "+cNum+"\r\n"
+				+path.toString()+", 单词数: "+wNum+"\r\n"
 				+path.toString()+", 行数: "+lineSum+"\r\n"
 				+path.toString()+", 代码行/空行/注释行: "+codeSum+"/"+spaceSum+"/"+noteSum+"\r\n");
 	}
+	public String toString(){
+		return path.toString()+"cNum="+cNum+" wNum="+wNum+" lineSum="+lineSum+" codeSum="+codeSum+" noteSum="+noteSum+" spaceSum="+spaceSum;
+	}
+	
 	//代码行/空行/注释行/
-	private Type analysisLine(String line){
+	private Type analysisline(String line){
 		return (line.equals("")||Pattern.matches("\\s+", line))?Type.SPACE:(Pattern.matches("//.*", line)?Type.NOTE:Type.CODE);
 	}
 }
 
 enum Command{
-	CHAR,WORD,LINE,ALL,OUTPUT,SALL,EXCEPT;
+	c,w,line,ALL,output,SALL,EXCEPT;
 }
 
 enum Type{
